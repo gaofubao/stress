@@ -1,0 +1,204 @@
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"github.com/bxcodec/faker/v3"
+	"io"
+	"log"
+	"net"
+	"net/http"
+	"time"
+)
+
+// 数据生成
+type Sourcer interface {
+	Source(cache chan []byte)
+}
+
+// 数据输出
+type Sinker interface {
+	Sink(cache chan []byte)
+}
+
+// 从Faker中生成数据
+type SourceFromFaker struct {
+}
+
+// 通过TCP/UDP协议输出数据
+type SinkToNet struct {
+	network string // 协议
+	address string // 网络地址与端口
+}
+
+// 输出数据到Elasticsearch
+type SinkToES struct {
+
+}
+
+// 数据压测类型
+type Stress struct {
+	cache chan []byte
+}
+
+// 定义服务监控指标
+type ServiceInfo struct {
+	RunTime  string  `json:"RunTime"`  // 服务运行时长
+	TotalNum int64   `json:"TotalNum"` // 发送成功数量
+	ErrNum   int64	 `json:"ErrNum"`   // 发送失败数量
+	TPS      float64 `json:"TPS"`      // 吞吐量
+	CacheLag int64	 `json:"CacheLag"` // 缓存堆积数
+}
+
+type Monitor struct {
+	startTime time.Time
+	tpsSli    []int64
+	data      ServiceInfo
+}
+
+// 用于记录日志数量
+var MonitorChan = make(chan int, 20000)
+
+const (
+	TypeTotalNum = 0 // 标识发送成功的日志
+	TypeErrNum = 1   // 标识发送失败的日志
+)
+
+func (m *Monitor) startMonitor(s *Stress) {
+	// 统计发送日志数
+	go func() {
+		for ch := range MonitorChan {
+			switch ch {
+			case TypeTotalNum:
+				m.data.TotalNum++
+			case TypeErrNum:
+				m.data.ErrNum++
+			}
+		}
+	}()
+
+	// 维护用户计算TPS的队列
+	ticker := time.NewTicker(time.Second * 5)
+	go func() {
+		for {
+			<-ticker.C
+			m.tpsSli = append(m.tpsSli, m.data.TotalNum)
+			if len(m.tpsSli) > 2 {
+				m.tpsSli = m.tpsSli[1:]
+			}
+		}
+	}()
+
+	http.HandleFunc("/monitor", func(writer http.ResponseWriter, request *http.Request) {
+		// 统计服务运行时长
+		m.data.RunTime = time.Now().Sub(m.startTime).String()
+		// 统计TPS
+		if len(m.tpsSli) >= 2 {
+			m.data.TPS = float64(m.tpsSli[1] - m.tpsSli[0]) / 5
+		}
+		// 统计缓存堆积数
+		m.data.CacheLag = int64(len(s.cache))
+
+		result, err := json.MarshalIndent(m.data, "", "\t")
+		if err != nil {
+			log.Println("监控数据序列化错误:", err.Error())
+		}
+		io.WriteString(writer, string(result))
+	})
+
+	http.ListenAndServe(":8888", nil)
+}
+
+func (s *SourceFromFaker) Source(cache chan []byte) {
+	type SomeStructWithTags struct {
+		CreditCardNumber   string  `faker:"cc_number"`
+		CreditCardType     string  `faker:"cc_type"`
+		Email              string  `faker:"email"`
+		DomainName         string  `faker:"domain_name"`
+		IPV4               string  `faker:"ipv4"`
+		PhoneNumber        string  `faker:"phone_number"`
+		MacAddress         string  `faker:"mac_address"`
+		URL                string  `faker:"url"`
+		UserName           string  `faker:"username"`
+		E164PhoneNumber    string  `faker:"e_164_phone_number"`
+		Name               string  `faker:"name"`
+		Timestamp          string  `faker:"timestamp"`
+		Century            string  `faker:"century"`
+		Sentence           string  `faker:"sentence"`
+		Paragraph          string  `faker:"paragraph"`
+		Currency           string  `faker:"currency"`
+		Amount             float64 `faker:"amount"`
+		AmountWithCurrency string  `faker:"amount_with_currency"`
+		PaymentMethod      string  `faker:"oneof: cc, paypal, check, money order"`
+	}
+
+	dataFormat := SomeStructWithTags{}
+	for {
+		err := faker.FakeData(&dataFormat)
+		if err != nil {
+			log.Println("Fake data失败:", err.Error())
+			continue
+		}
+		dataBytes, err := json.Marshal(dataFormat)
+		buffer := bytes.NewBuffer(dataBytes)
+		buffer.Write([]byte("\n"))
+		if err != nil {
+			log.Println("序列化数据失败:", err.Error())
+			continue
+		}
+		// 发送的消息以"\n"结尾，避免粘包
+		cache <-buffer.Bytes()
+	}
+}
+
+func (s *SinkToNet) Sink(cache chan []byte) {
+	// 创建连接, 并控制超时
+	conn, err := net.DialTimeout(s.network, s.address, time.Second * 3)
+	if err != nil {
+		log.Fatalf("连接失败: %s\n", err.Error())
+	}
+	defer conn.Close()
+
+	for msg := range cache {
+		// TODO: 发送超时控制
+		_, err := conn.Write(msg)
+		if err != nil {
+			MonitorChan <- TypeErrNum
+			log.Printf("发送数据失败: %s", err.Error())
+			continue
+		}
+		MonitorChan <- TypeTotalNum
+	}
+}
+
+func (s *SinkToES) Sink(cache chan []byte) {
+
+}
+
+func main() {
+	address := flag.String("addr", "127.0.0.1:514", "请输入服务端的IP地址和端口，格式为: ip:port")
+	protocol := flag.String("prot", "tcp", "请输入传输协议，tcp或udp")
+	cacheSize := flag.Int("size", 1000, "请输入缓存队列大小")
+
+	flag.Parse()
+	fmt.Println(*address)
+	fmt.Println(*protocol)
+	fmt.Println(*cacheSize)
+
+	source := &SourceFromFaker{}
+	sink := &SinkToNet{network: "tcp", address: "127.0.0.1:8882"}
+	stress := &Stress{cache: make(chan []byte, 1000)}
+	monitor := &Monitor{
+		startTime: time.Now(),
+		data: ServiceInfo{},
+	}
+
+	go source.Source(stress.cache)
+	for i := 0; i < 3; i ++ {
+		go sink.Sink(stress.cache)
+	}
+
+	monitor.startMonitor(stress)
+}

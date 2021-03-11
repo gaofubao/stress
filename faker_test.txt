@@ -1,0 +1,60 @@
+package main
+
+import (
+	"fmt"
+	"github.com/bxcodec/faker/v3"
+	"testing"
+)
+
+func TestFaker(t *testing.T) {
+
+	type SomeStructWithTags struct {
+		CreditCardNumber   string  `faker:"cc_number"`
+		CreditCardType     string  `faker:"cc_type"`
+		Email              string  `faker:"email"`
+		DomainName         string  `faker:"domain_name"`
+		IPV4               string  `faker:"ipv4"`
+		PhoneNumber        string  `faker:"phone_number"`
+		MacAddress         string  `faker:"mac_address"`
+		URL                string  `faker:"url"`
+		UserName           string  `faker:"username"`
+		E164PhoneNumber    string  `faker:"e_164_phone_number"`
+		Name               string  `faker:"name"`
+		Timestamp          string  `faker:"timestamp"`
+		Century            string  `faker:"century"`
+		Sentence           string  `faker:"sentence"`
+		Paragraph          string  `faker:"paragraph"`
+		Currency           string  `faker:"currency"`
+		Amount             float64 `faker:"amount"`
+		AmountWithCurrency string  `faker:"amount_with_currency"`
+		PaymentMethod      string  `faker:"oneof: cc, paypal, check, money order"` // oneof will randomly pick one of the comma-separated values supplied in the tag
+	}
+
+	a := SomeStructWithTags{}
+	err := faker.FakeData(&a)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(a)
+
+	err = faker.FakeData(&a)
+	fmt.Println(a)
+
+	//b, err := json.MarshalIndent(a, "", "\t")
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+	//fmt.Println(string(b))
+}
+
+func TestHeap(t *testing.T) {
+	//queue := make([]int, 2)
+	var queue []int
+	queue = append(queue, 1)
+	queue = append(queue, 2)
+	queue = append(queue, 3)
+	fmt.Println(queue)
+	fmt.Println(queue[1:])
+}
+
+
