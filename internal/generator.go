@@ -4,18 +4,19 @@ import (
 	"bytes"
 	"encoding/json"
 	"log"
-	"stress/buffer"
+
+	"github.com/gaofubao/stress/v1.0.0/buffer"
 
 	"github.com/bxcodec/faker/v3"
 )
 
 // 数据生成
 type Generator interface {
-	Source(pool buffer.Pool)
+	Generate(pool buffer.Pool)
 }
 
 // 从Faker中生成数据
-type GenerateFromFaker struct {
+type genFromFaker struct {
 }
 
 type FakerTypeOne struct {
@@ -40,7 +41,11 @@ type FakerTypeOne struct {
 	PaymentMethod      string  `faker:"oneof: cc, paypal, check, money order"`
 }
 
-func (s *GenerateFromFaker) Generate(pool buffer.Pool) {
+func NewGenFromFaker() (Generator, error) {
+	return &genFromFaker{}, nil
+}
+
+func (s *genFromFaker) Generate(pool buffer.Pool) {
 	dataFormat := FakerTypeOne{}
 	for {
 		err := faker.FakeData(&dataFormat)

@@ -1,12 +1,12 @@
 package main
 
 import (
-	"log"
-	"time"
-
 	"github.com/gaofubao/stress/v1.0.0/buffer"
 	"github.com/gaofubao/stress/v1.0.0/internal"
 	"github.com/gaofubao/stress/v1.0.0/monitor"
+	"log"
+	"runtime"
+	"time"
 )
 
 func init() {
@@ -29,20 +29,26 @@ func main() {
 		log.Fatalf("创建缓冲池失败: %s, 单个缓冲器大小为: %d, 缓冲器数量为: %d\n", err.Error(), bufferCap, maxBufferNumber)
 	}
 
-	g := &internal.GenerateFromFaker{}
+	g, _ := internal.NewGenFromFaker()
 
-	protocol := "tcp"
-	address := "127.0.0.1:8888"
-	s := &internal.SinkToNet{
-		Protocol: protocol,
-		Address:  address,
-	}
+	m, _ := monitor.NewMonitor(9999)
 
-	m := &monitor.Monitor{
-		StartTime: time.Now(),
-		Info:      monitor.ServiceMetrics{},
-		Queue:     make([]uint64, 2),
-	}
+	//protocol := "tcp"
+	//address := "127.0.0.1:8888"
+	//s, err := internal.NewSinkToNet(protocol, address)
+	//if err != nil {
+	//	log.Fatalf("初始化数据发送器失败: %s", err.Error())
+	//}
+
+	address := "http://192.168.38.60:9200"
+	indexName := "stress-index"
+	shards := 3
+	replicas := 0
+	workers := runtime.NumCPU()
+	flushBytes := 1000000
+	flushInterval := 30 * time.Second
+	s, _ := internal.NewSinkToES(address, indexName, shards, replicas, workers, flushBytes, flushInterval)
+
 
 	// 模块启动
 	go g.Generate(pool)

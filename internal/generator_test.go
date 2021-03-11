@@ -2,12 +2,13 @@ package internal
 
 import (
 	"fmt"
-	"stress/buffer"
 	"testing"
+
+	"github.com/gaofubao/stress/v1.0.0/buffer"
 )
 
 func TestGenerateFromFaker_Generate(t *testing.T) {
-	g := &GenerateFromFaker{}
+	g := &genFromFaker{}
 
 	pool, err := buffer.NewPool(100, 10)
 	if err != nil {
