@@ -4,9 +4,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/gaofubao/stress/v1/buffer"
-	"github.com/gaofubao/stress/v1/internal"
-	"github.com/gaofubao/stress/v1/monitor"
+	"github.com/gaofubao/stress/v1.0.0/buffer"
+	"github.com/gaofubao/stress/v1.0.0/internal"
+	"github.com/gaofubao/stress/v1.0.0/monitor"
 )
 
 func init() {
