@@ -61,7 +61,6 @@ func (s *genFromFaker) Generate(pool buffer.Pool) {
 		buffer := bytes.NewBuffer(dataBytes)
 		// 发送的消息以"\n"结尾，避免粘包
 		buffer.Write([]byte("\n"))
-		//fmt.Println(string(buffer.Bytes()))
 		err = pool.Put(buffer.Bytes())
 		if err != nil {
 			log.Println("数据写入缓冲池失败", err.Error())

@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gaofubao/stress/v1.0.0/buffer"
@@ -60,7 +61,7 @@ func (m *myMonitor) Start(p buffer.Pool, s internal.Sinker) {
 		io.WriteString(writer, string(result))
 	})
 
-	http.ListenAndServe(":9999", nil)
+	http.ListenAndServe(":" + strconv.Itoa(m.port), nil)
 }
 
 // 获取Histogram类型指标, 即某些量化指标的平均值
