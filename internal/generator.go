@@ -7,7 +7,8 @@ import (
 
 	"github.com/gaofubao/stress/v1.0.0/buffer"
 
-	"github.com/bxcodec/faker/v3"
+	"github.com/gaofubao/stress/v1.0.0/faker"
+
 )
 
 // 数据生成
@@ -46,6 +47,7 @@ func NewGenFromFaker() (Generator, error) {
 }
 
 func (s *genFromFaker) Generate(pool buffer.Pool) {
+	// TODO: 增加@timestamp字段
 	dataFormat := FakerTypeOne{}
 	for {
 		err := faker.FakeData(&dataFormat)

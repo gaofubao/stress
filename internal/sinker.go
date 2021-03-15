@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/cenkalti/backoff/v4"
+	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/elastic/go-elasticsearch/v7/esutil"
 	"io/ioutil"
 	"log"
 	"net"
@@ -12,10 +15,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/elastic/go-elasticsearch/v7"
-	"github.com/elastic/go-elasticsearch/v7/esutil"
 	"github.com/gaofubao/stress/v1.0.0/buffer"
 )
 

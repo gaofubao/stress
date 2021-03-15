@@ -1,10 +1,11 @@
 package internal
 
 import (
+	"encoding/json"
 	"fmt"
-	"testing"
-
 	"github.com/gaofubao/stress/v1.0.0/buffer"
+	"github.com/gaofubao/stress/v1.0.0/faker"
+	"testing"
 )
 
 func TestGenerateFromFaker_Generate(t *testing.T) {
@@ -29,4 +30,22 @@ func TestGenerateFromFaker_Generate(t *testing.T) {
 			t.Fatalf("生成的数据不是[]byte类型: %T\n", v)
 		}
 	}
+}
+
+func TestGenTimestamp(t *testing.T) {
+	type Article struct {
+		Time      string    `faker:"timestamp"`
+	}
+
+	dataFormat := Article{}
+	err := faker.FakeData(&dataFormat)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	b, err := json.Marshal(dataFormat)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(string(b))
 }
