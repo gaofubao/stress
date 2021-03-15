@@ -30,3 +30,10 @@ curl 127.0.0.1:9999/metrics
 ![image](https://user-images.githubusercontent.com/38099986/111067327-bbaa6c80-84fe-11eb-8237-2f598ccd6fb6.png)
 
 ![image](https://user-images.githubusercontent.com/38099986/111067561-da5d3300-84ff-11eb-9e81-7e32e820bb17.png)
+
+## 待更新
+- 数据中包含@timestamp字段
+- 增加TCP连接池
+- 支持限速
+- 支持更多数据集
+
